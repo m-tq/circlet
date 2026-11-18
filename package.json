@@ -1,0 +1,10 @@
+{
+  "name": "circlet",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Octra Circle browser extension",
+  "scripts": {
+    "test": "node tests/sealed.test.mjs && node tests/live-rpc.mjs"
+  }
+}

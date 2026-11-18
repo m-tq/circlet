@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en" data-theme="dark" class="theme-dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>circlet — resolving</title>
+  <link rel="icon" href="assets/icon.svg">
+  <link rel="stylesheet" href="css/synteq-ui.css">
+  <link rel="stylesheet" href="src/ui/app.css">
+</head>
+<body>
+  <div class="c-resolve-wrap">
+    <div class="c-resolve-card">
+      <div class="c-resolve-brand">
+        <svg class="sq-icon sq-icon--20 sq-icon--brand" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M17 7.5a6.5 6.5 0 1 0 0 9" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/><circle cx="18" cy="12" r="1.7" fill="currentColor"/></svg>
+        <strong>circlet</strong>
+        <span class="c-muted">/</span>
+        <span id="networkLabel">Octra</span>
+      </div>
+
+      <div class="c-col">
+        <div class="sq-section__title">
+          <svg class="sq-icon sq-icon--14" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18"/><path d="M12 3a15 15 0 0 1 0 18a15 15 0 0 1 0-18z"/></svg>
+          Octra destination
+        </div>
+        <div class="c-resolve-title" id="resolveTitle">Preparing resolver</div>
+        <div class="c-resolve-uri" id="resolveUri"></div>
+      </div>
+
+      <div class="sq-stepper" data-sq-stepper data-sq-step="0" id="stepper">
+        <div class="sq-stepper__item">
+          <span class="sq-stepper__marker" aria-hidden="true">1</span>
+          <div class="sq-stepper__body">
+            <div class="sq-stepper__title">Detect destination</div>
+            <div class="sq-stepper__desc">Read the Octra address or Name Service name.</div>
+          </div>
+        </div>
+        <div class="sq-stepper__item">
+          <span class="sq-stepper__marker" aria-hidden="true">2</span>
+          <div class="sq-stepper__body">
+            <div class="sq-stepper__title">Resolve address</div>
+            <div class="sq-stepper__desc">Resolve the name on the active network.</div>
+          </div>
+        </div>
+        <div class="sq-stepper__item">
+          <span class="sq-stepper__marker" aria-hidden="true">3</span>
+          <div class="sq-stepper__body">
+            <div class="sq-stepper__title">Inspect Circle</div>
+            <div class="sq-stepper__desc">Check access mode and network metadata.</div>
+          </div>
+        </div>
+        <div class="sq-stepper__item">
+          <span class="sq-stepper__marker" aria-hidden="true">4</span>
+          <div class="sq-stepper__body">
+            <div class="sq-stepper__title">Open destination</div>
+            <div class="sq-stepper__desc">Open the Circle in the viewer.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="sq-alert sq-alert--err" id="errorBox" role="alert" hidden>
+        <svg class="sq-icon sq-icon--16 sq-alert__icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        <div class="sq-alert__content">
+          <div class="sq-alert__title">Unable to resolve destination</div>
+          <div class="sq-alert__message" id="errorMessage"></div>
+        </div>
+      </div>
+
+      <div class="c-actions">
+        <button class="sq-btn sq-btn--primary" type="button" id="retry">Retry</button>
+        <button class="sq-btn sq-btn--ghost" type="button" id="copyRaw">Copy destination</button>
+        <a class="sq-btn sq-btn--ghost" href="home.html">Home</a>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/synteq-ui.js"></script>
+  <script type="module" src="src/ui/button-icons.js"></script>
+  <script type="module" src="src/pages/resolve.js"></script>
+</body>
+</html>

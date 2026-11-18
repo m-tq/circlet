@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en" data-theme="dark" class="theme-dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>circlet</title>
+  <link rel="icon" href="assets/icon.svg">
+  <link rel="stylesheet" href="css/synteq-ui.css">
+  <link rel="stylesheet" href="src/ui/app.css">
+</head>
+<body class="c-popup-body">
+  <div class="c-popup">
+    <div class="c-popup__head">
+      <a class="c-popup__brand" href="home.html" target="_blank" aria-label="Open circlet home">
+        <span class="c-popup__mark" aria-hidden="true">
+          <svg class="sq-icon sq-icon--20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M17 7.5a6.5 6.5 0 1 0 0 9" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/><circle cx="18" cy="12" r="1.7" fill="currentColor"/></svg>
+        </span>
+        <span class="c-popup__name">circlet</span>
+      </a>
+      <div class="c-popup__head-actions">
+        <button class="sq-iconbtn sq-theme-toggle" data-sq-toggle-theme aria-label="Toggle theme">
+          <svg class="sq-icon sq-icon--16 sq-icon--moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+          <svg class="sq-icon sq-icon--16 sq-icon--sun" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+        </button>
+        <a class="sq-iconbtn" href="options.html" target="_blank" aria-label="Settings">
+          <svg class="sq-icon sq-icon--16" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        </a>
+      </div>
+    </div>
+
+    <div class="c-popup__body">
+      <div class="c-popup__block">
+        <div class="c-popup__label">Open Circle</div>
+        <form id="openForm" autocomplete="off">
+          <div class="c-address c-popup__input">
+            <span class="c-address__protocol" aria-hidden="true">oct://</span>
+            <input class="c-address__input" id="openInput" type="text" spellcheck="false" autocapitalize="none" placeholder="oct… or name.oct" aria-label="Circle address or Octra name">
+            <button class="sq-iconbtn" type="submit" aria-label="Open Circle">
+              <svg class="sq-icon sq-icon--16" viewBox="0 0 24 24" aria-hidden="true"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+            </button>
+          </div>
+        </form>
+        <div class="c-row" style="margin-top:var(--sq-space-2);">
+          <button type="button" class="c-chip" data-open-sample>sample <code>poctra</code></button>
+          <a class="c-chip" href="home.html" target="_blank">open dashboard</a>
+        </div>
+      </div>
+
+      <div class="c-popup__block">
+        <div class="c-popup__label" style="display:flex;justify-content:space-between;align-items:center;">
+          <span>Recent</span>
+          <span class="c-muted" id="recentCount" style="font-weight:400;text-transform:none;letter-spacing:0;">0</span>
+        </div>
+        <div class="c-list c-popup__recent" id="recentList"></div>
+      </div>
+
+      <div class="c-popup__block">
+        <div class="c-popup__label" style="display:flex;justify-content:space-between;align-items:center;">
+          <span>Saved</span>
+          <span class="c-muted" id="bookmarkCount" style="font-weight:400;text-transform:none;letter-spacing:0;">0</span>
+        </div>
+        <div class="c-list c-popup__recent" id="bookmarkList"></div>
+      </div>
+
+      <div class="c-popup__block">
+        <div class="c-popup__label">Network</div>
+        <div class="c-popup__network">
+          <span class="sq-dot" id="netDot" aria-hidden="true"></span>
+          <span class="c-truncate" id="netName" style="font-size:var(--sq-text-sm);color:var(--sq-text-strong);">Octra</span>
+          <span class="c-muted c-truncate" id="netMeta" style="font-size:var(--sq-text-xs);"></span>
+        </div>
+        <div class="sq-seg" role="group" aria-label="Octra network" id="networkSeg" style="margin-top:var(--sq-space-2);width:100%;">
+          <button class="sq-seg__btn" type="button" data-network="mainnet" style="flex:1;">Mainnet</button>
+          <button class="sq-seg__btn" type="button" data-network="devnet" style="flex:1;">Devnet</button>
+        </div>
+        <div class="c-hint" id="statusHint" style="margin-top:var(--sq-space-2);">Checking RPC…</div>
+      </div>
+    </div>
+
+    <div class="c-popup__foot">
+      <span class="c-hint" style="flex:1;">Type <span class="c-code-inline">oct</span> in the address bar</span>
+      <a class="sq-btn sq-btn--ghost" href="home.html" target="_blank">Home</a>
+    </div>
+  </div>
+
+  <script src="js/synteq-ui.js"></script>
+  <script type="module" src="src/ui/button-icons.js"></script>
+  <script type="module" src="src/pages/popup.js"></script>
+</body>
+</html>

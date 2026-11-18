@@ -1,0 +1,273 @@
+<!doctype html>
+<html lang="en" data-theme="dark" class="theme-dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>circlet — Octra Circle browser</title>
+  <link rel="icon" href="assets/icon.svg">
+  <link rel="stylesheet" href="css/synteq-ui.css">
+  <link rel="stylesheet" href="src/ui/app.css">
+</head>
+<body class="c-no-section-lines">
+  <div class="sq-app" id="app">
+    <aside class="sq-aside" aria-label="Circlet navigation" id="sidebar">
+      <a href="home.html" class="sq-aside__brand" aria-label="Circlet home">
+        <span class="sq-aside__brand-mark" aria-hidden="true">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M17 7.5a6.5 6.5 0 1 0 0 9" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/><circle cx="18" cy="12" r="1.7" fill="currentColor"/></svg>
+        </span>
+        circlet
+      </a>
+      <nav class="sq-nav" aria-label="Primary navigation">
+        <a href="#open" class="sq-nav__item sq-nav__item--active" aria-current="page">
+          <svg class="sq-icon sq-icon--16" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/></svg>
+          Open
+        </a>
+        <a href="#network" class="sq-nav__item">
+          <svg class="sq-icon sq-icon--16" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.55a11 11 0 0 1 14.08 0"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><line x1="12" y1="20" x2="12.01" y2="20"/></svg>
+          Network
+        </a>
+        <a href="#names" class="sq-nav__item">
+          <svg class="sq-icon sq-icon--16" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18"/><path d="M12 3a15 15 0 0 1 0 18a15 15 0 0 1 0-18z"/></svg>
+          Names
+        </a>
+        <a href="#bookmarks" class="sq-nav__item">
+          <svg class="sq-icon sq-icon--16" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.5l2.7 5.5 6.1.9-4.4 4.3 1 6.1-5.4-2.9-5.4 2.9 1-6.1-4.4-4.3 6.1-.9Z"/></svg>
+          Saved
+        </a>
+        <a href="#about" class="sq-nav__item">
+          <svg class="sq-icon sq-icon--16" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 4 7v6c0 5 3.4 7.5 8 8 4.6-.5 8-3 8-8V7l-8-4Z"/><path d="M9 12h6M12 9v6"/></svg>
+          Security
+        </a>
+        <a href="options.html" class="sq-nav__item">
+          <svg class="sq-icon sq-icon--16" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+          Settings
+        </a>
+      </nav>
+      <div class="sq-aside__footer">
+        <span class="sq-dot" id="dockDot" aria-hidden="true"></span>
+        <span id="dockNetwork" class="c-truncate">Octra</span>
+      </div>
+    </aside>
+
+    <header class="sq-topbar" role="banner">
+      <button class="sq-sidebar-toggle" data-sq-sidebar-toggle aria-label="Toggle navigation" aria-expanded="true" aria-controls="sidebar">
+        <svg class="sq-icon sq-icon--18 icon-menu" viewBox="0 0 24 24" aria-hidden="true"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+        <svg class="sq-icon sq-icon--18 icon-close" viewBox="0 0 24 24" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+      <div class="sq-topbar__left">
+        <span class="sq-topbar__title">circlet</span>
+        <span class="sq-status" id="topStatus" aria-label="Checking network">
+          <span class="sq-dot" id="topDot" aria-hidden="true"></span>
+          <span class="sq-t-xs sq-mute" id="topStatusText">checking</span>
+        </span>
+      </div>
+      <div class="sq-topbar__right">
+        <button class="sq-iconbtn sq-theme-toggle" data-sq-toggle-theme aria-label="Toggle theme">
+          <svg class="sq-icon sq-icon--16 sq-icon--moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+          <svg class="sq-icon sq-icon--16 sq-icon--sun" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+        </button>
+        <a class="sq-iconbtn" href="options.html" aria-label="Settings">
+          <svg class="sq-icon sq-icon--16" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        </a>
+        <div class="sq-topbar__loader" aria-hidden="true"></div>
+      </div>
+    </header>
+
+    <main class="sq-main" aria-label="Circlet home">
+      <div class="sq-content sq-scroll" id="main-content">
+        <section class="sq-section" id="open">
+          <div class="c-home-grid">
+            <div class="c-home-hero">
+              <div>
+                <div class="c-home-title">Open an Octra Circle.</div>
+                <p class="c-home-lead" style="margin-top:var(--sq-space-3);">
+                  Type an address, an Octra Name Service name, or an <span class="c-code-inline">oct://</span> URI.
+                  Public Circles render immediately. Sealed Circles ask for their read passphrase and decrypt locally.
+                </p>
+              </div>
+              <form class="c-openbar" id="openForm" autocomplete="off">
+                <span class="c-address__protocol" aria-hidden="true">oct://</span>
+                <input class="c-openbar__input" id="openInput" type="text" spellcheck="false" autocapitalize="none" placeholder="oct… / name.oct / oct://name.oct/index.html" aria-label="Circle address or Octra name">
+                <button class="sq-btn sq-btn--brand" type="submit">
+                  <svg class="sq-icon sq-icon--14" viewBox="0 0 24 24" aria-hidden="true"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+                  Open
+                </button>
+              </form>
+              <div class="c-chips">
+                <button type="button" class="c-chip" data-open="oct3A5bhpktxb9y2gepQeGxSbkJspq3Pv178Zyi9tkM1oJx" data-net="devnet">
+                  <svg class="sq-icon sq-icon--12" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18"/></svg>
+                  sample <code>poctra</code>
+                </button>
+                <button type="button" class="c-chip" data-fill="oct://">oct:// URI</button>
+                <button type="button" class="c-chip" data-fill="name.oct">ONS name</button>
+              </div>
+              <div class="c-note">
+                Chrome cannot register a native protocol handler. Use the <strong>oct</strong> address-bar keyword,
+                or open a Circle from this page. circlet also intercepts <span class="c-code-inline">oct://</span>
+                links and <span class="c-code-inline">.oct</span> navigations.
+              </div>
+            </div>
+
+            <div class="c-home-side">
+              <div class="sq-section__head">
+                <span class="sq-section__title">
+                  <svg class="sq-icon sq-icon--14" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg>
+                  Recent Circles
+                </span>
+                <span class="sq-section__meta" id="recentCount">0</span>
+              </div>
+              <div class="c-list" id="recentList"></div>
+            </div>
+          </div>
+        </section>
+
+        <section class="sq-section" id="network">
+          <div class="sq-section__head">
+            <span class="sq-section__title">
+              <svg class="sq-icon sq-icon--14" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.55a11 11 0 0 1 14.08 0"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><line x1="12" y1="20" x2="12.01" y2="20"/></svg>
+              Network
+            </span>
+            <span class="sq-section__meta" id="networkMeta">—</span>
+          </div>
+          <div class="sq-stat-strip">
+            <div class="sq-stat">
+              <span class="sq-stat__label">Network</span>
+              <div class="sq-stat__value" id="statNetwork">—</div>
+            </div>
+            <div class="sq-stat">
+              <span class="sq-stat__label">Epoch</span>
+              <div class="sq-stat__value c-mono" id="statEpoch">—</div>
+            </div>
+            <div class="sq-stat">
+              <span class="sq-stat__label">Latency</span>
+              <div class="sq-stat__value" id="statLatency">—</div>
+            </div>
+            <div class="sq-stat">
+              <span class="sq-stat__label">Chain ID</span>
+              <div class="sq-stat__value c-mono" id="statVersion">—</div>
+            </div>
+          </div>
+          <div class="c-home-grid" style="margin-top:var(--sq-space-5);">
+            <div class="c-col">
+              <div class="sq-field">
+                <span class="sq-field__label">Active network</span>
+                <div class="sq-seg" role="group" aria-label="Active Octra network" id="networkSeg">
+                  <button class="sq-seg__btn" type="button" data-network="mainnet">Mainnet</button>
+                  <button class="sq-seg__btn" type="button" data-network="devnet">Devnet</button>
+                </div>
+              </div>
+              <div class="sq-kv" id="networkKv"></div>
+            </div>
+            <div class="c-col">
+              <div class="sq-field">
+                <span class="sq-field__label">Observed RPC latency</span>
+                <svg class="sq-spark" id="latencySpark" viewBox="0 0 200 40" preserveAspectRatio="none" role="img" aria-label="Observed RPC latency"></svg>
+              </div>
+              <div class="c-hint" id="networkHint">RPC fallback is automatic: circlet tries each endpoint in order.</div>
+              <div class="c-actions">
+                <button class="sq-btn sq-btn--ghost" type="button" id="refreshStatus">Refresh status</button>
+                <a class="sq-btn sq-btn--ghost" href="options.html#networks">Manage networks</a>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="sq-section" id="names">
+          <div class="c-home-hero" style="max-width:760px;">
+            <div>
+              <div class="sq-section__title">
+                <svg class="sq-icon sq-icon--14" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18"/><path d="M12 3a15 15 0 0 1 0 18a15 15 0 0 1 0-18z"/></svg>
+                Octra Name Service
+              </div>
+              <div class="c-home-title" style="font-size:var(--sq-text-2xl);margin-top:var(--sq-space-2);">Look up a name.</div>
+              <p class="c-home-lead" style="margin-top:var(--sq-space-2);">
+                Names are resolved on the active network through Octra Name Service.
+                Use <span class="c-code-inline">name.oct</span> or <span class="c-code-inline">app.name.oct</span>.
+              </p>
+            </div>
+            <form class="c-openbar" id="nameForm" autocomplete="off">
+              <span class="c-address__protocol" aria-hidden="true">.oct</span>
+              <input class="c-openbar__input" id="nameInput" type="text" spellcheck="false" autocapitalize="none" placeholder="name.oct" aria-label="Octra name">
+              <button class="sq-btn sq-btn--primary" type="submit">Resolve</button>
+            </form>
+            <div class="c-resolve-result" id="nameResult"></div>
+          </div>
+        </section>
+
+        <section class="sq-section" id="bookmarks">
+          <div class="sq-section__head">
+            <span class="sq-section__title">
+              <svg class="sq-icon sq-icon--14" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.5l2.7 5.5 6.1.9-4.4 4.3 1 6.1-5.4-2.9-5.4 2.9 1-6.1-4.4-4.3 6.1-.9Z"/></svg>
+              Saved
+            </span>
+            <span class="sq-section__meta" id="bookmarkCount">0</span>
+          </div>
+          <div class="c-home-grid">
+            <div class="c-col">
+              <form class="c-openbar" id="bookmarkForm" autocomplete="off">
+                <span class="c-address__protocol" aria-hidden="true">+</span>
+                <input class="c-openbar__input" id="bookmarkInput" type="text" spellcheck="false" autocapitalize="none" placeholder="oct… / name.oct / https://…" aria-label="Bookmark a Circle, Octra address, or URL">
+                <button class="sq-btn sq-btn--brand" type="submit">Save</button>
+              </form>
+              <div class="c-hint">Save a Circle, an Octra account address, or a regular website URL.</div>
+              <div class="c-list" id="bookmarkList"></div>
+            </div>
+            <div class="c-home-side">
+              <div class="c-note">
+                Bookmarks are stored locally in this browser profile. Circle bookmarks remember their network and path;
+                account addresses open in the explorer; regular URLs open in a normal tab.
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="sq-section" id="about">
+          <div class="sq-grid sq-grid--2">
+            <div class="c-col" style="gap:var(--sq-space-5);">
+              <div class="c-home-title" style="font-size:var(--sq-text-2xl);">Minimal trust by construction.</div>
+              <div class="c-quick-list">
+                <div class="c-quick-item">
+                  <svg class="sq-icon sq-icon--18 sq-icon--brand c-quick-item__icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>
+                  <div class="c-quick-item__copy">
+                    <span class="c-quick-item__title">Isolated Circle runtime</span>
+                    <span class="c-quick-item__body">Circle apps open in a separate environment and cannot access the browser extension, other sites, or your wallet.</span>
+                  </div>
+                </div>
+                <div class="c-quick-item">
+                  <svg class="sq-icon sq-icon--18 sq-icon--brand c-quick-item__icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 4 7v6c0 5 3.4 7.5 8 8 4.6-.5 8-3 8-8V7l-8-4Z"/></svg>
+                  <div class="c-quick-item__copy">
+                    <span class="c-quick-item__title">Sealed Circles stay local</span>
+                    <span class="c-quick-item__body">Passphrases decrypt Circle resources on this device. The RPC provider only sees encrypted data.</span>
+                  </div>
+                </div>
+                <div class="c-quick-item">
+                  <svg class="sq-icon sq-icon--18 sq-icon--brand c-quick-item__icon" viewBox="0 0 24 24" aria-hidden="true"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+                  <div class="c-quick-item__copy">
+                    <span class="c-quick-item__title">Read-only chain access</span>
+                    <span class="c-quick-item__body">Circle apps can read chain data through circlet. Transactions and wallet permissions require a separate wallet.</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="c-col" style="gap:var(--sq-space-4);">
+              <div class="sq-kv">
+                <div class="sq-kv__row"><span class="sq-kv__label">Remote assets</span><span class="sq-kv__value" id="remotePolicy">—</span></div>
+                <div class="sq-kv__row"><span class="sq-kv__label">Runtime network</span><span class="sq-kv__value">blocked</span></div>
+                <div class="sq-kv__row"><span class="sq-kv__label">Wallet</span><span class="sq-kv__value">not bundled</span></div>
+                <div class="sq-kv__row"><span class="sq-kv__label">Telemetry</span><span class="sq-kv__value">none</span></div>
+              </div>
+              <div class="c-note">
+                Review the active network, name service, Circle address, and requested action before trusting an application.
+              </div>
+            </div>
+          </div>
+        </section>
+      </div>
+    </main>
+  </div>
+
+  <script src="js/synteq-ui.js"></script>
+  <script type="module" src="src/ui/button-icons.js"></script>
+  <script type="module" src="src/pages/home.js"></script>
+</body>
+</html>

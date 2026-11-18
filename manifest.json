@@ -1,0 +1,56 @@
+{
+  "manifest_version": 3,
+  "name": "circlet",
+  "description": "Open public and sealed Octra Circle apps with Octra Name Service resolution, straight from the address bar.",
+  "version": "1.0.0",
+  "minimum_chrome_version": "116",
+  "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAzs0WQ3yrKrEBYwUaE0cjaSOB+Qs61cOo2aKFUnPQsQwMreq6BFfgsh/Dxcwn+5pmMmWFRu8fpAU3OVdzvekNXu/RVX95OKA8k+fH4/L9A335YHbZlb+vQ0EhiUiuqtKOS2wKTwWVO5Te+Q0p0H7Yh+ka3GU+jIykyn2Ngkt9DFpQO8c8n7uYh0Ao7RCR4KHQq/eob6OxFcTBCM1h3fu06wRfK85+rd5WqLypXYxfdfJWBRENcbAKu2w1rts0veSFDZ2t3777gd+cRQggO6t5OZdvJjZ0d6RhvziHI1nTvgTdL1eE/ajlr4yJTNkj8Od7wnPzN0ErXVpdXAwwm+EX7wIDAQAB",
+  "action": {
+    "default_title": "circlet — Octra Circle browser",
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "assets/icon-16.png",
+      "32": "assets/icon-32.png",
+      "48": "assets/icon-48.png",
+      "128": "assets/icon-128.png"
+    }
+  },
+  "icons": {
+    "16": "assets/icon-16.png",
+    "32": "assets/icon-32.png",
+    "48": "assets/icon-48.png",
+    "128": "assets/icon-128.png"
+  },
+  "background": {
+    "service_worker": "src/background.js",
+    "type": "module"
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["src/content.js"],
+      "run_at": "document_start",
+      "all_frames": false
+    }
+  ],
+  "host_permissions": ["<all_urls>"],
+  "permissions": [
+    "clipboardWrite",
+    "contextMenus",
+    "downloads",
+    "storage",
+    "tabs",
+    "unlimitedStorage",
+    "webNavigation"
+  ],
+  "omnibox": {
+    "keyword": "oct"
+  },
+  "content_security_policy": {
+    "extension_pages": "script-src 'self'; object-src 'none';",
+    "sandbox": "sandbox allow-scripts allow-forms allow-popups allow-modals allow-downloads; default-src 'none'; script-src 'self' 'unsafe-inline' 'unsafe-eval' 'wasm-unsafe-eval' blob: data:; style-src 'self' 'unsafe-inline' data: blob:; img-src data: blob:; font-src data: blob:; media-src data: blob:; connect-src 'none'; worker-src 'self' blob: data:; child-src 'none'; object-src 'none'; frame-src 'none'; form-action 'none';"
+  },
+  "sandbox": {
+    "pages": ["sandbox.html"]
+  }
+}
