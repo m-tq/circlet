@@ -38,6 +38,7 @@
     "clipboardWrite",
     "contextMenus",
     "downloads",
+    "scripting",
     "storage",
     "tabs",
     "unlimitedStorage",

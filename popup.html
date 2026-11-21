@@ -34,16 +34,12 @@
         <form id="openForm" autocomplete="off">
           <div class="c-address c-popup__input">
             <span class="c-address__protocol" aria-hidden="true">oct://</span>
-            <input class="c-address__input" id="openInput" type="text" spellcheck="false" autocapitalize="none" placeholder="oct… or name.oct" aria-label="Circle address or Octra name">
+            <input class="c-address__input" id="openInput" type="text" spellcheck="false" autocapitalize="none" placeholder="oct... or name.oct" aria-label="Circle address or Octra name">
             <button class="sq-iconbtn" type="submit" aria-label="Open Circle">
               <svg class="sq-icon sq-icon--16" viewBox="0 0 24 24" aria-hidden="true"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
             </button>
           </div>
         </form>
-        <div class="c-row" style="margin-top:var(--sq-space-2);">
-          <button type="button" class="c-chip" data-open-sample>sample <code>poctra</code></button>
-          <a class="c-chip" href="home.html" target="_blank">open dashboard</a>
-        </div>
       </div>
 
       <div class="c-popup__block">
@@ -63,23 +59,35 @@
       </div>
 
       <div class="c-popup__block">
-        <div class="c-popup__label">Network</div>
-        <div class="c-popup__network">
-          <span class="sq-dot" id="netDot" aria-hidden="true"></span>
-          <span class="c-truncate" id="netName" style="font-size:var(--sq-text-sm);color:var(--sq-text-strong);">Octra</span>
-          <span class="c-muted c-truncate" id="netMeta" style="font-size:var(--sq-text-xs);"></span>
-        </div>
-        <div class="sq-seg" role="group" aria-label="Octra network" id="networkSeg" style="margin-top:var(--sq-space-2);width:100%;">
-          <button class="sq-seg__btn" type="button" data-network="mainnet" style="flex:1;">Mainnet</button>
-          <button class="sq-seg__btn" type="button" data-network="devnet" style="flex:1;">Devnet</button>
-        </div>
-        <div class="c-hint" id="statusHint" style="margin-top:var(--sq-space-2);">Checking RPC…</div>
+        <button type="button" class="c-dashboard-btn" id="openDashboard">
+          <svg class="sq-icon sq-icon--18" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+          <span>Open Dashboard</span>
+        </button>
       </div>
     </div>
 
     <div class="c-popup__foot">
-      <span class="c-hint" style="flex:1;">Type <span class="c-code-inline">oct</span> in the address bar</span>
-      <a class="sq-btn sq-btn--ghost" href="home.html" target="_blank">Home</a>
+      <button type="button" class="c-wallet-chip" id="walletChip" title="Open Wallets">
+        <svg class="sq-icon sq-icon--16" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M16 12h2"/><path d="M3 10h18"/></svg>
+        <span class="c-wallet-chip__text">
+          <span class="c-wallet-chip__name c-truncate" id="walletName">No wallet</span>
+          <span class="c-wallet-chip__addr c-truncate c-mono" id="walletAddress">Open Wallets</span>
+        </span>
+      </button>
+      <div class="c-network-wrap">
+        <button type="button" class="c-network-btn" id="networkButton" aria-haspopup="menu" aria-expanded="false" title="Active network">
+          <svg class="sq-icon sq-icon--16 c-network-wifi" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.55a11 11 0 0 1 14.08 0"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><line x1="12" y1="20" x2="12.01" y2="20"/></svg>
+          <span class="c-truncate" id="footerNetworkName">Octra</span>
+        </button>
+        <div class="c-network-menu" id="networkMenu" role="menu" hidden>
+          <div class="c-network-menu__label">Active network</div>
+          <div class="c-network-menu__list" id="networkList"></div>
+          <button type="button" class="c-network-menu__manage" id="manageNetworks">
+            <svg class="sq-icon sq-icon--14" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+            Manage networks
+          </button>
+        </div>
+      </div>
     </div>
   </div>
 

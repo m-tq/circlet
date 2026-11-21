@@ -4,6 +4,7 @@ const BOOKMARK_LIMIT = 200;
 
 export const IDENTITY_MAINNET = "octH1GEiwunjEZyiBMjp1ETy1VUJJKEEnsMRZ8P2AvTC3et";
 export const IDENTITY_DEVNET = "oct2Tdnmgh8qtvhC82W9VhoRJcLkAhNRCbnEEPhCUPX5b7m";
+export const IDENTITY_LOCAL = "oct88XsisoJGg9LRegEkBHoBaGcX7HjVvHqLxZBbhkyzYD9";
 
 export const DEFAULT_NETWORKS = [
   {
@@ -24,6 +25,16 @@ export const DEFAULT_NETWORKS = [
     identity: IDENTITY_DEVNET,
     chainId: "octra-devnet-9871-cluster",
     isDefault: true
+  },
+  {
+    id: "local",
+    name: "Octra Local",
+    type: "custom",
+    rpcUrls: ["http://127.0.0.1:18080/rpc"],
+    explorer: "http://127.0.0.1:18080",
+    identity: IDENTITY_LOCAL,
+    chainId: "octra-local-pentest-v1",
+    isDefault: true
   }
 ];
 
@@ -33,7 +44,9 @@ export const DEFAULT_SETTINGS = {
   allowRemoteNetwork: true,
   showProtocolBar: true,
   recent: [],
-  bookmarks: []
+  bookmarks: [],
+  dapps: [],
+  webcliUrl: "http://127.0.0.1:8420"
 };
 
 function clone(value) {
@@ -43,6 +56,18 @@ function clone(value) {
 function safeNetworkType(value) {
   const type = String(value || "").trim().toLowerCase();
   return type === "mainnet" || type === "devnet" ? type : "custom";
+}
+
+function normalizeWebcliUrl(value) {
+  try {
+    const url = new URL(String(value || ""));
+    if (url.protocol !== "http:" && url.protocol !== "https:") return DEFAULT_SETTINGS.webcliUrl;
+    const host = url.hostname.toLowerCase();
+    if (host !== "127.0.0.1" && host !== "localhost" && host !== "[::1]" && host !== "::1") return DEFAULT_SETTINGS.webcliUrl;
+    return url.origin;
+  } catch {
+    return DEFAULT_SETTINGS.webcliUrl;
+  }
 }
 
 function normalizeEndpoint(value) {
@@ -193,6 +218,39 @@ export function findBookmark(settings, key) {
   return settings?.bookmarks?.find((bookmark) => bookmark.key === key) || null;
 }
 
+function dappKey(networkId, circleId) {
+  return `${networkId}:${circleId}`;
+}
+
+function normalizeDapp(input, fallbackNetworkId) {
+  if (!input || typeof input !== "object") return null;
+  const circleId = String(input.circleId || "").trim();
+  if (!/^oct[1-9A-HJ-NP-Za-km-z]{44}$/.test(circleId)) return null;
+  const networkId = String(input.networkId || fallbackNetworkId || "").slice(0, 64);
+  const allowed = new Set(["accounts", "balance", "history", "call", "send", "program", "encrypt"]);
+  const permissions = [...new Set((Array.isArray(input.permissions) ? input.permissions : ["accounts"])
+    .map((item) => String(item).toLowerCase())
+    .filter((item) => allowed.has(item)))];
+  const address = String(input.address || "").trim();
+  return {
+    id: /^[a-z0-9_-]{6,64}$/i.test(String(input.id || "")) ? String(input.id) : `d_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 9)}`,
+    key: dappKey(networkId, circleId),
+    circleId,
+    host: String(input.host || circleId).slice(0, 256),
+    display: String(input.display || `oct://${input.host || circleId}`).slice(0, 512),
+    title: String(input.title || input.host || circleId).slice(0, 120),
+    networkId,
+    address: /^oct[1-9A-HJ-NP-Za-km-z]{44}$/.test(address) ? address : "",
+    permissions: permissions.length ? permissions : ["accounts"],
+    connectedAt: Number(input.connectedAt) || Date.now(),
+    lastUsed: Number(input.lastUsed) || Date.now()
+  };
+}
+
+export function findDapp(settings, networkId, circleId) {
+  return settings?.dapps?.find((dapp) => dapp.key === dappKey(networkId, circleId)) || null;
+}
+
 export function normalizeSettings(input) {
   const stored = input && typeof input === "object" ? input : {};
   const storedNetworks = Array.isArray(stored.networks) ? stored.networks : [];
@@ -232,13 +290,24 @@ export function normalizeSettings(input) {
     bookmarks.push(normalized);
     if (bookmarks.length >= BOOKMARK_LIMIT) break;
   }
+  const dapps = [];
+  const seenDapps = new Set();
+  for (const entry of Array.isArray(stored.dapps) ? stored.dapps : []) {
+    const normalized = normalizeDapp(entry, activeNetworkId);
+    if (!normalized || seenDapps.has(normalized.key)) continue;
+    seenDapps.add(normalized.key);
+    dapps.push(normalized);
+    if (dapps.length >= 100) break;
+  }
   return {
     activeNetworkId,
     networks,
     allowRemoteNetwork: stored.allowRemoteNetwork !== false,
     showProtocolBar: stored.showProtocolBar !== false,
     recent,
-    bookmarks
+    bookmarks,
+    dapps,
+    webcliUrl: normalizeWebcliUrl(stored.webcliUrl)
   };
 }
 
@@ -326,4 +395,35 @@ export async function deleteBookmark(idOrKey) {
 
 export async function clearBookmarks() {
   return patchSettings({ bookmarks: [] });
+}
+export async function saveDapp(entry) {
+  const settings = await loadSettings();
+  const normalized = normalizeDapp({ ...entry, connectedAt: entry.connectedAt || Date.now(), lastUsed: Date.now() }, settings.activeNetworkId);
+  if (!normalized) return settings;
+  const existing = settings.dapps.find((dapp) => dapp.key === normalized.key);
+  if (existing) {
+    normalized.id = existing.id;
+    normalized.connectedAt = existing.connectedAt;
+  }
+  const dapps = [normalized, ...settings.dapps.filter((dapp) => dapp.key !== normalized.key)];
+  return saveSettings({ ...settings, dapps: dapps.slice(0, 100) });
+}
+
+export async function touchDapp(networkId, circleId) {
+  const settings = await loadSettings();
+  const dapp = findDapp(settings, networkId, circleId);
+  if (!dapp) return settings;
+  dapp.lastUsed = Date.now();
+  return saveSettings({ ...settings, dapps: [dapp, ...settings.dapps.filter((item) => item.key !== dapp.key)] });
+}
+
+export async function deleteDapp(idOrKey) {
+  const settings = await loadSettings();
+  const value = String(idOrKey || "");
+  const dapps = settings.dapps.filter((dapp) => dapp.id !== value && dapp.key !== value && dapp.circleId !== value);
+  return saveSettings({ ...settings, dapps });
+}
+
+export async function clearDapps() {
+  return patchSettings({ dapps: [] });
 }

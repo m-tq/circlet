@@ -1,5 +1,14 @@
 import { activeNetwork, loadSettings } from "./core/settings.js";
 import { resolveTarget, shortAddress } from "./core/octra.js";
+import {
+  webcliHasToken,
+  webcliLogin,
+  webcliLogout,
+  webcliOpen,
+  webcliRequest,
+  webcliSessionStatus,
+  webcliSetToken
+} from "./core/webcli.js";
 
 chrome.runtime.onInstalled.addListener(() => {
   chrome.contextMenus.removeAll(() => {
@@ -17,6 +26,21 @@ chrome.contextMenus.onClicked.addListener((info) => {
 });
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  if (message?.type?.startsWith("circlet:webcli:")) {
+    if (!String(sender.url || "").startsWith(chrome.runtime.getURL(""))) {
+      sendResponse({ ok: false, error: "Untrusted webcli request." });
+      return false;
+    }
+    handleWebcliMessage(message)
+      .then((data) => sendResponse({ ok: true, data }))
+      .catch((error) => sendResponse({
+        ok: false,
+        error: error?.message || "webcli request failed",
+        code: error?.code || "",
+        status: error?.status || 0
+      }));
+    return true;
+  }
   if (message?.type !== "open-circlet-input") return false;
   const disposition = message.disposition || "currentTab";
   const tabId = disposition === "currentTab" ? sender.tab?.id ?? null : null;
@@ -167,4 +191,23 @@ function escapeXml(value) {
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;");
+}
+
+async function handleWebcliMessage(message) {
+  const action = message.type.slice("circlet:webcli:".length);
+  if (action === "peek") return { hasToken: await webcliHasToken() };
+  if (action === "status") return webcliSessionStatus();
+  if (action === "login") return webcliLogin(String(message.address || ""), String(message.pin || ""));
+  if (action === "token") return webcliSetToken(String(message.token || ""));
+  if (action === "request") {
+    return webcliRequest(
+      String(message.path || ""),
+      String(message.method || "GET").toUpperCase(),
+      message.body ?? null,
+      { auth: message.auth !== false }
+    );
+  }
+  if (action === "logout") return webcliLogout(Boolean(message.lock));
+  if (action === "open") return webcliOpen();
+  throw new Error(`Unknown webcli action: ${action}`);
 }

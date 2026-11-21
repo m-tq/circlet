@@ -1,4 +1,4 @@
-﻿function safeJson(value) {
+function safeJson(value) {
   return JSON.stringify(value)
     .replace(/</g, "\\u003c")
     .replace(/\u2028/g, "\\u2028")
@@ -15,6 +15,7 @@ export function buildRuntimeScript(config) {
   const remoteAllowed = CONFIG.remoteAllowed !== false;
   const sealed = Boolean(CONFIG.sealed);
   const pendingRequests = new Map();
+  const providerListeners = new Map();
   let requestCounter = 0;
 
   function nextId(prefix) {
@@ -52,6 +53,13 @@ export function buildRuntimeScript(config) {
     });
   }
 
+  function providerEmit(event, data) {
+    const listeners = providerListeners.get(String(event)) || [];
+    for (const listener of listeners.slice()) {
+      try { listener(data); } catch (_) {}
+    }
+  }
+
   window.addEventListener('message', (event) => {
     if (event.source !== parentWindow) return;
     const message = event.data;
@@ -60,6 +68,11 @@ export function buildRuntimeScript(config) {
       const entry = pendingDownloads.get(message.id);
       if (!entry) return;
       entry.link.textContent = 'Preparing ' + (message.completed || 0) + '/' + (message.total || 0);
+      return;
+    }
+    if (message.source === 'circlet-dapp-event') {
+      if (message.event === 'accountsChanged' && Array.isArray(message.data)) provider.selectedAddress = message.data[0] || null;
+      providerEmit(message.event, message.data);
       return;
     }
     if (message.source !== 'circlet-response' || !message.id) return;
@@ -779,6 +792,82 @@ export function buildRuntimeScript(config) {
       post('navigate', { href: 'oct://' + target.circleId + target.path });
     }
   }, true);
+
+  const provider = {
+    isCirclet: true,
+    isOctra: true,
+    chainId: context.chain_id || '',
+    selectedAddress: null,
+    request(args) {
+      const payload = args && typeof args === 'object' ? args : {};
+      const method = String(payload.method || '');
+      if (!method) return Promise.reject(new Error('Provider method is required.'));
+      return request('dapp', { method: method, params: payload.params === undefined ? [] : payload.params }).then((result) => {
+        if ((method === 'octra_requestAccounts' || method === 'eth_requestAccounts' || method === 'octra_connect') && Array.isArray(result)) {
+          provider.selectedAddress = result[0] || null;
+          if (provider.selectedAddress) providerEmit('accountsChanged', [provider.selectedAddress]);
+        }
+        return result;
+      });
+    },
+    on(event, listener) {
+      if (typeof listener !== 'function') return provider;
+      const key = String(event);
+      const list = providerListeners.get(key) || [];
+      list.push(listener);
+      providerListeners.set(key, list);
+      return provider;
+    },
+    once(event, listener) {
+      const wrapped = (data) => {
+        provider.removeListener(event, wrapped);
+        listener(data);
+      };
+      return provider.on(event, wrapped);
+    },
+    removeListener(event, listener) {
+      const key = String(event);
+      const list = providerListeners.get(key) || [];
+      providerListeners.set(key, list.filter((entry) => entry !== listener));
+      return provider;
+    },
+    removeAllListeners(event) {
+      if (event === undefined) providerListeners.clear();
+      else providerListeners.delete(String(event));
+      return provider;
+    },
+    connect() {
+      return provider.request({ method: 'octra_requestAccounts' });
+    },
+    disconnect() {
+      return provider.request({ method: 'octra_disconnect' });
+    }
+  };
+  try {
+    Object.defineProperty(window, 'octra', { configurable: true, value: provider });
+    Object.defineProperty(window, 'OctraProvider', { configurable: true, value: provider });
+  } catch (_) {
+    window.octra = provider;
+    window.OctraProvider = provider;
+  }
+
+  const announceInfo = {
+    uuid: 'b6f0a2c8-7f1d-4a2b-9c3e-1f2d3e4a5b6c',
+    name: 'circlet',
+    rdns: 'io.circlet.wallet',
+    version: '1.0.0',
+    icon: 'data:image/svg+xml;base64,' + btoa('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="none" stroke="#00e599" stroke-width="2"/><circle cx="18" cy="12" r="2" fill="#00e599"/></svg>')
+  };
+  function announceProvider() {
+    try {
+      window.dispatchEvent(new CustomEvent('octra:announceProvider', {
+        detail: { info: announceInfo, provider: provider }
+      }));
+    } catch (_) {}
+  }
+  window.addEventListener('octra:requestProvider', announceProvider);
+  setTimeout(announceProvider, 0);
+  setTimeout(announceProvider, 300);
 
   post('ready', { sealed: sealed });
 })();`;

@@ -1,5 +1,4 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-label="circlet">
-  <path d="M92 40a36 36 0 1 0 0 48" fill="none" stroke="#00e599" stroke-width="10" stroke-linecap="round"/>
-  <circle cx="96" cy="64" r="10" fill="#00e599"/>
-  <circle cx="60" cy="64" r="7" fill="none" stroke="#00e599" stroke-width="4"/>
+  <path d="M103 40A46 46 0 1 0 103 88" fill="none" stroke="#00e599" stroke-width="13" stroke-linecap="round"/>
+  <circle cx="103" cy="64" r="12" fill="#00e599"/>
 </svg>

@@ -2,6 +2,8 @@
 
 A Chromium extension for opening **public** and **sealed** Octra Circle applications.
 
+![circlet preview](Screenshot.png)
+
 ```
 oct://poctra.oct
 oct://oct3A5bhpktxb9y2gepQeGxSbkJspq3Pv178Zyi9tkM1oJx
@@ -16,7 +18,8 @@ oct://oct3A5bhpktxb9y2gepQeGxSbkJspq3Pv178Zyi9tkM1oJx
 - **Address-bar workflow** — type `oct` + Space in Chrome's address bar, then an address, `oct://` URI, or `.oct` name.
 - **Fullscreen mode** — let a Circle fill the whole tab. Toggle from the toolbar or press `Ctrl+Shift+F`; press `Esc` to exit.
 - **Chain status** — the dashboard shows the active network, epoch, latency, and chain ID.
-- **Read-only chain access** — Circle apps can read Octra data. Transactions and wallet actions are never signed by circlet.
+- **Wallet signer** — connect a local webcli wallet to create, import, switch, and manage accounts; view balances and history; send OCT; and approve Circle wallet requests.
+- **Dapp handling** — Circles can use `window.octra` with explicit approval. Connected dapps can be reviewed and revoked from **Wallets → Dapps**.
 
 ## Install
 
@@ -43,13 +46,39 @@ Chrome does not allow extensions to register a native `oct://` protocol handler 
 | --- | --- | --- |
 | Mainnet | `https://octra.network/rpc` | `https://octrascan.io` |
 | Devnet | `https://devnet.octrascan.io/rpc` | `https://devnet.octrascan.io` |
+| Local (optional) | `http://127.0.0.1:18080/rpc` | `http://127.0.0.1:18080` |
 
 Add or edit networks in **Settings → Networks**. Built-in networks use HTTPS endpoints. Custom networks can point to your own node.
 
+## Wallets and dapps
+
+circlet uses a locally running **webcli** wallet. Start webcli on `http://127.0.0.1:8420`, then open **Wallets** from the dashboard.
+
+1. Paste the webcli API key or launch URL, or unlock an existing wallet with its PIN.
+2. Create, import, derive, switch, rename, or remove accounts; check balances and history; send OCT.
+3. Circle apps can request `window.octra` access. Every connection, transaction, and program call shows an approval dialog.
+4. Manage or revoke connected dapps in **Wallets → Dapps**.
+
+Wallet data and keys remain in webcli. circlet does not store wallet PINs. A dapp connection is scoped to the active network and Circle.
+
+Circle provider methods:
+
+```js
+await window.octra.request({ method: "octra_requestAccounts" });
+await window.octra.request({ method: "octra_accounts" });
+await window.octra.request({ method: "octra_chainId" });
+await window.octra.request({ method: "octra_getBalance" });
+await window.octra.request({ method: "octra_call", params: [{ address, method, params }] });
+await window.octra.request({ method: "octra_sendTransaction", params: [{ to, amount, message }] });
+await window.octra.request({ method: "octra_callProgram", params: [{ circle_id, method, params, amount }] });
+```
+
+`window.octra` announces itself through the RFC-O-1 provider handshake and emits `connect`, `accountsChanged`, and `disconnect` events.
+
 ## Privacy and safety
 
-- Circle apps run in an isolated environment and cannot access the extension, other websites, browser data, or your wallet.
-- Circle apps have read-only access to Octra chain data. circlet does not include a wallet or signer.
+- Circle apps run in an isolated environment and cannot access the extension, other websites, browser data, or your wallet without an explicit approval.
+- Circle apps can read Octra chain data. Wallet actions are signed by webcli only after you approve the request and provide the required PIN.
 - Sealed Circle passphrases stay in this browser session and expire automatically.
 - Remote assets for public Circles are downloaded and embedded before the Circle opens. Circle apps cannot make their own network connections.
 - Bookmarks, recent Circles, and settings are stored locally in your browser profile.
@@ -61,6 +90,7 @@ Add or edit networks in **Settings → Networks**. Built-in networks use HTTPS e
 - Circle apps must be self-contained and cannot call their own backend services.
 - Circle apps that depend on browser-level navigation, iframes, or service workers run in a reduced environment.
 - Sealed Circles require the correct read passphrase and cannot load resources from another Circle.
+- Message signing is not exposed through the current webcli API; use transaction or program-call approvals instead.
 
 ## Feedback
 

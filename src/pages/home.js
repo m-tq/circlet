@@ -149,13 +149,18 @@ function renderNetwork() {
 
   els.networkSeg.replaceChildren();
   for (const candidate of state.settings.networks) {
-    if (candidate.type !== "mainnet" && candidate.type !== "devnet") continue;
     const button = document.createElement("button");
     button.type = "button";
     button.className = `sq-seg__btn${candidate.id === network.id ? " sq-seg__btn--active" : ""}`;
-    button.dataset.network = candidate.type;
+    button.dataset.network = candidate.id;
     button.setAttribute("aria-pressed", String(candidate.id === network.id));
-    button.textContent = candidate.type === "mainnet" ? "Mainnet" : "Devnet";
+    button.textContent = candidate.id === "local"
+      ? "Local"
+      : candidate.type === "mainnet"
+        ? "Mainnet"
+        : candidate.type === "devnet"
+          ? "Devnet"
+          : candidate.name;
     els.networkSeg.append(button);
   }
 
@@ -225,8 +230,8 @@ function recordLatency(value) {
   } catch {}
 }
 
-async function switchNetwork(type) {
-  const target = state.settings.networks.find((network) => network.type === type);
+async function switchNetwork(idOrType) {
+  const target = state.settings.networks.find((network) => network.id === idOrType || network.type === idOrType);
   if (!target || target.id === state.network.id) return;
   state.settings = await setActiveNetwork(target.id);
   state.network = activeNetwork(state.settings);

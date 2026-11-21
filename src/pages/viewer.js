@@ -1,12 +1,15 @@
-﻿import {
+import {
   activeNetwork,
   addRecent,
   circleBookmarkKey,
   deleteBookmark,
+  deleteDapp,
   findBookmark,
+  findDapp,
   loadSettings,
   normalizeSettings,
   saveBookmark,
+  saveDapp,
   setActiveNetwork
 } from "../core/settings.js";
 import {
@@ -28,7 +31,9 @@ import {
   normalizePath,
   parseTarget,
   programView,
-  resolveTarget
+  resolveTarget,
+  rpc,
+  shortAddress
 } from "../core/octra.js";
 import { buildDocument } from "../core/render.js";
 
@@ -83,7 +88,27 @@ const els = {
   networkDialog: document.getElementById("networkDialog"),
   networkBody: document.getElementById("networkBody"),
   fullscreenExit: document.getElementById("fullscreenExit"),
-  bookmarkButton: document.getElementById("bookmarkButton")
+  dappDialog: document.getElementById("dappDialog"),
+  dappTitle: document.getElementById("dappTitle"),
+  dappOrigin: document.getElementById("dappOrigin"),
+  dappDescription: document.getElementById("dappDescription"),
+  dappDetails: document.getElementById("dappDetails"),
+  dappWalletRow: document.getElementById("dappWalletRow"),
+  dappWallet: document.getElementById("dappWallet"),
+  dappPinRow: document.getElementById("dappPinRow"),
+  dappPin: document.getElementById("dappPin"),
+  dappApprove: document.getElementById("dappApprove"),
+  dappReject: document.getElementById("dappReject"),
+  dappClose: document.getElementById("dappClose"),
+  bookmarkButton: document.getElementById("bookmarkButton"),
+  programChip: document.getElementById("programChip"),
+  programChipText: document.getElementById("programChipText"),
+  programDot: document.getElementById("programDot"),
+  dappPinToggle: document.getElementById("dappPinToggle"),
+  dockMode: document.getElementById("dockMode"),
+  dockNetwork: document.getElementById("dockNetwork"),
+  dockChain: document.getElementById("dockChain"),
+  dockWallet: document.getElementById("dockWallet")
 };
 
 const state = {
@@ -105,7 +130,9 @@ const state = {
   pendingEntry: null,
   logs: [],
   assetCache: new Map(),
-  objectUrls: []
+  objectUrls: [],
+  dappResolve: null,
+  pausedNoticeKey: ""
 };
 
 bindStaticControls();
@@ -116,6 +143,12 @@ init().catch((error) => {
 });
 
 async function init() {
+  window.SynteqUI?.sidebarClose();
+  document.addEventListener("DOMContentLoaded", () => window.SynteqUI?.sidebarClose());
+  setTimeout(() => window.SynteqUI?.sidebarClose(), 80);
+  try {
+    if (localStorage.getItem("circlet:viewer:topbar") === "hidden") setTopbarHidden(true, false);
+  } catch {}
   state.settings = await loadSettings();
   if (PARAMS.get("net") && PARAMS.get("net") !== state.settings.activeNetworkId) {
     state.settings = await setActiveNetwork(PARAMS.get("net"));
@@ -170,6 +203,18 @@ function bindStaticControls() {
     else showInfoDialog();
   });
   els.fullscreenExit.addEventListener("click", exitViewerFullscreen);
+  els.dappReject.addEventListener("click", () => finishDappApproval(null));
+  els.dappClose.addEventListener("click", () => finishDappApproval(null));
+  els.dappApprove.addEventListener("click", approveDappRequest);
+  els.dappPinToggle.addEventListener("click", () => {
+    const visible = els.dappPin.type === "password";
+    els.dappPin.type = visible ? "text" : "password";
+    els.dappPinToggle.setAttribute("aria-pressed", String(visible));
+    els.dappPinToggle.setAttribute("aria-label", visible ? "Hide PIN" : "Show PIN");
+    els.dappPinToggle.title = visible ? "Hide PIN" : "Show PIN";
+  });
+  els.dappDialog.addEventListener("close", () => finishDappApproval(null));
+  els.dappDialog.addEventListener("cancel", () => finishDappApproval(null));
   document.addEventListener("fullscreenchange", () => {
     if (!document.fullscreenElement) setFullscreenClass(false);
   });
@@ -229,7 +274,9 @@ function handleAction(action) {
   else if (action === "info") showInfoDialog();
   else if (action === "network") showNetworkDialog();
   else if (action === "fullscreen") toggleViewerFullscreen();
+  else if (action === "toggle-topbar") setTopbarHidden(!document.body.classList.contains("c-topbar-hidden"));
   else if (action === "bookmark") toggleBookmark();
+  else if (action === "copy-uri") copyText(state.display || "", "Circle URI copied");
 }
 
 async function toggleBookmark() {
@@ -264,6 +311,52 @@ function updateBookmarkUi() {
   const label = saved ? "Remove bookmark" : "Bookmark this Circle";
   els.bookmarkButton.title = label;
   els.bookmarkButton.setAttribute("aria-label", label);
+  updateDockInfo();
+}
+
+function updateDockInfo() {
+  if (!els.dockMode) return;
+  const dapp = currentDapp();
+  els.dockMode.textContent = state.mode === "sealed" ? "sealed" : "public";
+  els.dockNetwork.textContent = state.network?.name || "—";
+  els.dockChain.textContent = state.network?.chainId || "—";
+  els.dockWallet.textContent = dapp?.address ? shortAddress(dapp.address, 10, 7) : "not connected";
+}
+
+async function updateProgramStatus() {
+  if (!els.programChip) return;
+  els.programChip.hidden = true;
+  if (!state.circleId) return;
+  const seq = state.seq;
+  try {
+    const infoResponse = await rpc(state.network, {
+      jsonrpc: "2.0",
+      id: 1,
+      method: "octra_circleProgramInfo",
+      params: [state.circleId]
+    });
+    if (seq !== state.seq) return;
+    const programInfo = infoResponse?.result || infoResponse;
+    if (!programInfo?.has_program) return;
+    const view = await programView(state.network, state.circleId, "get_config_snapshot", []);
+    if (seq !== state.seq) return;
+    const text = typeof view === "string" ? view : String(view?.result ?? "");
+    const fields = text.split("|");
+    if (fields.length < 5) return;
+    const paused = fields[4] === "1";
+    els.programChip.hidden = false;
+    els.programChip.classList.toggle("c-program-chip--paused", paused);
+    els.programChip.classList.toggle("c-program-chip--online", !paused);
+    els.programChipText.textContent = paused ? "program paused" : "program online";
+    els.programDot.style.background = paused ? "var(--sq-status-warning)" : "var(--sq-status-running)";
+    const key = `${state.network.id}:${state.circleId}:paused`;
+    if (paused && state.pausedNoticeKey !== key) {
+      state.pausedNoticeKey = key;
+      SynteqToast("Program is paused", "warn");
+    }
+  } catch {
+    if (seq === state.seq) els.programChip.hidden = true;
+  }
 }
 
 function setFullscreenClass(active) {
@@ -296,12 +389,379 @@ function toggleViewerFullscreen() {
   else enterViewerFullscreen();
 }
 
+function setTopbarHidden(hidden, persist = true) {
+  document.body.classList.toggle("c-topbar-hidden", hidden);
+  document.querySelectorAll('[data-action="toggle-topbar"]').forEach((button) => {
+    button.setAttribute("aria-pressed", String(hidden));
+    const label = hidden ? "Show top bar" : "Hide top bar";
+    button.title = label;
+    button.setAttribute("aria-label", label);
+  });
+  if (persist) {
+    try { localStorage.setItem("circlet:viewer:topbar", hidden ? "hidden" : "shown"); } catch {}
+  }
+}
+
+function currentDapp() {
+  return findDapp(state.settings, state.network.id, state.circleId);
+}
+
+function requireDapp() {
+  const dapp = currentDapp();
+  if (!dapp?.address) {
+    const error = new Error("This Circle is not connected to a wallet.");
+    error.code = 4100;
+    throw error;
+  }
+  return dapp;
+}
+
+function normalizeRpc(value) {
+  return String(value || "").trim().replace(/\/+$/, "");
+}
+
+function assertWalletNetwork(wallet) {
+  const current = normalizeRpc(wallet?.rpc_url);
+  const matches = state.network.rpcUrls.some((url) => normalizeRpc(url) === current);
+  if (!matches) {
+    const error = new Error(`webcli wallet RPC does not match ${state.network.name}. Update it in Wallets -> Settings.`);
+    error.code = 4901;
+    throw error;
+  }
+}
+
+async function connectDapp() {
+  let status;
+  try {
+    status = await sendWebcli("status");
+  } catch (error) {
+    throw Object.assign(new Error("webcli is not reachable. Open Wallets to connect."), { code: 4900 });
+  }
+  const existing = currentDapp();
+  const activeWallet = status.connected ? status.wallet : null;
+  if (existing?.address && activeWallet?.address === existing.address) {
+    return existing.address;
+  }
+  const wallets = Array.isArray(status.browser?.wallets) ? status.browser.wallets : [];
+  if (!activeWallet && !wallets.length) {
+    throw Object.assign(new Error("No wallet in webcli. Open Wallets to create or import one."), { code: 4100 });
+  }
+  const approval = await showDappApproval({
+    title: "Connect wallet",
+    description: "This Circle wants to view your account and request wallet actions. Your PIN is needed only if webcli is locked.",
+    details: {
+      Circle: state.display,
+      Network: state.network.name,
+      Wallet: activeWallet?.address || "select a wallet"
+    },
+    needsWallet: !activeWallet,
+    needsPin: !activeWallet,
+    wallets
+  });
+  if (!approval) {
+    throw Object.assign(new Error("User rejected the connection."), { code: 4001 });
+  }
+  if (!activeWallet) {
+    await sendWebcli("login", { address: approval.wallet, pin: approval.pin });
+  }
+  const nextStatus = await sendWebcli("status");
+  const wallet = nextStatus.wallet;
+  if (!wallet?.address) {
+    throw Object.assign(new Error("Wallet is still locked."), { code: 4100 });
+  }
+  state.settings = await saveDapp({
+    circleId: state.circleId,
+    host: state.host,
+    display: state.display,
+    title: document.title.replace(/ · circlet$/i, "").trim() || state.host,
+    networkId: state.network.id,
+    address: wallet.address,
+    permissions: ["accounts", "balance", "history", "call", "send", "program"]
+  });
+  updateDockInfo();
+  broadcastDappEvent("accountsChanged", [wallet.address]);
+  broadcastDappEvent("connect", { chainId: state.network.chainId || state.network.id });
+  SynteqToast("Wallet connected", "ok");
+  return wallet.address;
+}
+
+async function handleDappRequest(id, payload) {
+  const method = String(payload.method || "");
+  const params = payload.params;
+  try {
+    if (method === "octra_chainId" || method === "eth_chainId" || method === "octra_netVersion") {
+      respond(id, true, state.network.chainId || state.network.id);
+      return;
+    }
+    if (method === "octra_getNetwork") {
+      respond(id, true, {
+        chainId: state.network.chainId || state.network.id,
+        name: state.network.name,
+        rpc: state.network.rpcUrls[0] || ""
+      });
+      return;
+    }
+    if (method === "octra_networkInfo") {
+      respond(id, true, {
+        id: state.network.chainId || state.network.id,
+        name: state.network.name,
+        rpcUrl: state.network.rpcUrls[0] || "",
+        explorerUrl: state.network.explorer || "",
+        supportsPrivacy: true,
+        isTestnet: state.network.type !== "mainnet"
+      });
+      return;
+    }
+    if (method === "octra_permissions") {
+      const dapp = currentDapp();
+      respond(id, true, dapp?.address
+        ? ["read_address", "read_balance", "read_public_key", "contract_calls"]
+        : []);
+      return;
+    }
+    if (method === "octra_accounts" || method === "eth_accounts") {
+      const dapp = currentDapp();
+      respond(id, true, dapp?.address ? [dapp.address] : []);
+      return;
+    }
+    if (method === "octra_requestAccounts" || method === "eth_requestAccounts" || method === "octra_connect") {
+      const address = await connectDapp();
+      respond(id, true, [address]);
+      return;
+    }
+    if (method === "octra_disconnect") {
+      const dapp = currentDapp();
+      if (dapp) state.settings = await deleteDapp(dapp.id);
+      broadcastDappEvent("disconnect", { code: 4900, message: "Wallet disconnected." });
+      respond(id, true, true);
+      return;
+    }
+    if (method === "octra_getBalance") {
+      const dapp = requireDapp();
+      const response = await rpc(state.network, { jsonrpc: "2.0", id: 1, method: "octra_balance", params: [dapp.address] });
+      if (response?.error && !/sender not found/i.test(response.error.message || "")) throw new Error(response.error.message || "Balance lookup failed.");
+      const result = response?.result;
+      respond(id, true, String(result?.balance_raw ?? result?.balance ?? result?.public_balance ?? result ?? "0"));
+      return;
+    }
+    if (method === "octra_getTransactionCount") {
+      const dapp = requireDapp();
+      const response = await rpc(state.network, { jsonrpc: "2.0", id: 1, method: "octra_balance", params: [dapp.address] });
+      if (response?.error && !/sender not found/i.test(response.error.message || "")) throw new Error(response.error.message || "Nonce lookup failed.");
+      respond(id, true, String(response?.result?.nonce ?? 0));
+      return;
+    }
+    if (method === "octra_getHistory") {
+      requireDapp();
+      const history = await sendWebcli("request", { path: "/api/history?limit=50&offset=0", method: "GET" });
+      respond(id, true, history);
+      return;
+    }
+    if (method === "octra_call" || method === "octra_callProgramView" || method === "eth_call") {
+      const call = Array.isArray(params)
+        ? { address: params[0], method: params[1], params: params[2] }
+        : (params || {});
+      const address = call.address || call.to || call.circle_id || call.circleId;
+      const callMethod = call.method || call.fn;
+      if (!address || !callMethod) throw new Error("Contract address and method are required.");
+      const result = await programView(state.network, address, callMethod, Array.isArray(call.params) ? call.params : []);
+      respond(id, true, result);
+      return;
+    }
+    if (method === "octra_sendTransaction" || method === "eth_sendTransaction") {
+      const dapp = requireDapp();
+      const tx = Array.isArray(params) ? params[0] : (params || {});
+      if (!tx.to || tx.amount == null) throw new Error("Transaction recipient and amount are required.");
+      const status = await sendWebcli("status").catch(() => ({}));
+      const activeWallet = status.connected ? status.wallet : null;
+      const approval = await showDappApproval({
+        title: "Send transaction",
+        description: "Approve this transaction. Your PIN authorizes webcli to sign and submit it.",
+        details: {
+          From: activeWallet?.address || dapp.address,
+          To: tx.to,
+          Amount: String(tx.amount),
+          Message: tx.message || "",
+          Network: state.network.name
+        },
+        needsWallet: !activeWallet,
+        needsPin: true,
+        wallets: status.browser?.wallets || []
+      });
+      if (!approval) throw Object.assign(new Error("User rejected the transaction."), { code: 4001 });
+      if (!activeWallet) await sendWebcli("login", { address: approval.wallet, pin: approval.pin });
+      const nextStatus = await sendWebcli("status");
+      const wallet = nextStatus.wallet;
+      if (!wallet?.address) throw Object.assign(new Error("Wallet is still locked."), { code: 4100 });
+      assertWalletNetwork(wallet);
+      if (dapp.address && wallet.address !== dapp.address) {
+        throw Object.assign(new Error("The active webcli wallet changed. Reconnect this Circle."), { code: 4100 });
+      }
+      const result = await sendWebcli("request", {
+        path: "/api/send",
+        method: "POST",
+        body: {
+          to: tx.to,
+          amount: String(tx.amount),
+          message: tx.message || "",
+          pin: approval.pin,
+          expected_wallet: wallet.address,
+          expected_generation: wallet.generation
+        }
+      });
+      respond(id, true, result);
+      return;
+    }
+    if (method === "octra_callProgram" || method === "octra_sendTransactionProgram") {
+      const dapp = requireDapp();
+      const call = Array.isArray(params) ? params[0] : (params || {});
+      const callMethod = call.method || call.fn;
+      if (!callMethod) throw new Error("Program method is required.");
+      const status = await sendWebcli("status").catch(() => ({}));
+      const activeWallet = status.connected ? status.wallet : null;
+      const approval = await showDappApproval({
+        title: "Execute program call",
+        description: "Approve this program call. Your PIN authorizes webcli to sign and submit it.",
+        details: {
+          Circle: call.circle_id || call.address || state.circleId,
+          Method: callMethod,
+          Params: call.params || [],
+          Amount: call.amount || "0",
+          Network: state.network.name
+        },
+        needsWallet: !activeWallet,
+        needsPin: true,
+        wallets: status.browser?.wallets || []
+      });
+      if (!approval) throw Object.assign(new Error("User rejected the program call."), { code: 4001 });
+      if (!activeWallet) await sendWebcli("login", { address: approval.wallet, pin: approval.pin });
+      const wallet = (await sendWebcli("status")).wallet;
+      if (!wallet) throw Object.assign(new Error("Wallet is still locked."), { code: 4100 });
+      assertWalletNetwork(wallet);
+      if (dapp.address && wallet.address !== dapp.address) {
+        throw Object.assign(new Error("The active webcli wallet changed. Reconnect this Circle."), { code: 4100 });
+      }
+      const result = await sendWebcli("request", {
+        path: "/api/program/call",
+        method: "POST",
+        body: {
+          circle_id: call.circle_id || (call.address ? "" : state.circleId),
+          address: call.address || "",
+          method: callMethod,
+          params: Array.isArray(call.params) ? call.params : [],
+          amount: String(call.amount || "0"),
+          pin: approval.pin,
+          expected_wallet: wallet.address,
+          expected_generation: wallet.generation
+        }
+      });
+      respond(id, true, result);
+      return;
+    }
+    if (method === "octra_signMessage" || method === "personal_sign") {
+      throw Object.assign(new Error("Message signing is not available in webcli yet."), { code: 4200 });
+    }
+    if (method === "wallet_getPermissions") {
+      const dapp = currentDapp();
+      respond(id, true, dapp?.address ? [{ parentCapability: "octra_accounts" }] : []);
+      return;
+    }
+    if (method === "wallet_requestPermissions") {
+      const address = await connectDapp();
+      respond(id, true, [{ parentCapability: "octra_accounts", address }]);
+      return;
+    }
+    throw Object.assign(new Error(`Unsupported provider method: ${method}`), { code: 4200 });
+  } catch (error) {
+    const raw = error?.message || "Wallet request failed.";
+    const message = /pin|passphrase|refus|incorrect|wrong/i.test(raw) ? "PIN refused" : raw;
+    SynteqToast(message, "err");
+    respond(id, false, null, message, error?.code || -32603);
+  }
+}
+
+function showDappApproval(options) {
+  return new Promise((resolve) => {
+    state.dappResolve = resolve;
+    state.dappNeedsPin = Boolean(options.needsPin);
+    state.dappNeedsWallet = Boolean(options.needsWallet);
+    els.dappTitle.textContent = options.title || "Wallet request";
+    els.dappOrigin.textContent = state.display;
+    els.dappDescription.textContent = options.description || "";
+    els.dappDetails.textContent = JSON.stringify(options.details || {}, null, 2);
+    els.dappWalletRow.hidden = !options.needsWallet;
+    els.dappWallet.replaceChildren();
+    for (const wallet of options.wallets || []) {
+      const option = document.createElement("option");
+      option.value = wallet.addr;
+      option.textContent = `${wallet.name || "wallet"} · ${wallet.addr}`;
+      els.dappWallet.append(option);
+    }
+    if (!els.dappWallet.options.length) {
+      const option = document.createElement("option");
+      option.value = "";
+      option.textContent = "No wallet available";
+      els.dappWallet.append(option);
+    }
+    els.dappPinRow.hidden = !options.needsPin;
+    els.dappPin.value = "";
+    els.dappDialog.showModal();
+    setTimeout(() => {
+      if (options.needsWallet) els.dappWallet.focus();
+      else if (options.needsPin) els.dappPin.focus();
+      else els.dappApprove.focus();
+    }, 40);
+  });
+}
+
+function approveDappRequest() {
+  if (!state.dappResolve) return;
+  const pin = els.dappPin.value;
+  const wallet = els.dappWallet.value;
+  if (state.dappNeedsWallet && !wallet) return SynteqToast("Select a wallet", "warn");
+  if (state.dappNeedsPin && !pin) {
+    els.dappPin.focus();
+    return SynteqToast("PIN is required", "warn");
+  }
+  finishDappApproval({ wallet, pin });
+}
+
+function finishDappApproval(value) {
+  const resolve = state.dappResolve;
+  state.dappResolve = null;
+  if (els.dappDialog.open) els.dappDialog.close();
+  if (resolve) resolve(value);
+}
+
+function broadcastDappEvent(event, data) {
+  if (!state.token) return;
+  try {
+    els.frame.contentWindow.postMessage({
+      source: "circlet-dapp-event",
+      token: state.token,
+      event,
+      data
+    }, "*");
+  } catch {}
+}
+
 function SynteqToast(message, kind) {
   try {
     window.SynteqUI?.toast(message, { kind: kind || "info" });
   } catch {
     // Toast failures must never stop navigation.
   }
+}
+
+async function sendWebcli(action, payload = {}) {
+  const response = await chrome.runtime.sendMessage({ type: `circlet:webcli:${action}`, ...payload });
+  if (!response?.ok) {
+    const error = new Error(response?.error || "webcli request failed");
+    error.code = response?.code || "";
+    error.status = response?.status || 0;
+    throw error;
+  }
+  return response.data;
 }
 
 function setLoading(active) {
@@ -314,7 +774,7 @@ function refreshNetworkUi() {
   const network = state.network || activeNetwork(state.settings);
   els.networkLabel.textContent = network?.name || "Octra";
   document.querySelectorAll(".c-netseg [data-network]").forEach((button) => {
-    const target = state.settings.networks.find((entry) => entry.type === button.dataset.network) || null;
+    const target = state.settings.networks.find((entry) => entry.id === button.dataset.network || entry.type === button.dataset.network) || null;
     const isActive = Boolean(target && target.id === network.id);
     button.classList.toggle("sq-seg__btn--active", isActive);
     button.setAttribute("aria-pressed", String(isActive));
@@ -445,6 +905,7 @@ async function openEntry(entry, options = {}) {
       state.passphrase = "";
       updateAddressBar();
       updateBookmarkUi();
+      updateProgramStatus();
       els.sealedChip.hidden = false;
       els.passphraseInput.value = "";
       showState("passphrase");
@@ -463,6 +924,7 @@ async function openEntry(entry, options = {}) {
     els.sealedChip.hidden = mode !== "sealed";
     updateAddressBar();
     updateBookmarkUi();
+    updateProgramStatus();
     if (unlock) await storePassphrase(entry.circleId, unlock);
 
     els.loadingDetail.textContent = "Fetching Circle resources.";
@@ -923,6 +1385,7 @@ function showError(message) {
   showState("error");
   setLoading(false);
   updateBookmarkUi();
+  if (els.programChip) els.programChip.hidden = true;
 }
 
 function updateHistoryBar() {
@@ -986,6 +1449,13 @@ async function onWindowMessage(event) {
     if (message.type === "ready") {
       showState("frame");
       setLoading(false);
+      const dapp = currentDapp();
+      if (dapp?.address) {
+        setTimeout(() => {
+          broadcastDappEvent("accountsChanged", [dapp.address]);
+          broadcastDappEvent("connect", { chainId: state.network.chainId || state.network.id });
+        }, 50);
+      }
       return;
     }
     if (message.type === "meta") {
@@ -1041,6 +1511,8 @@ async function onWindowMessage(event) {
     } else if (message.kind === "clipboard") {
       await writeClipboard(String(message.payload?.text ?? ""));
       respond(id, true, true);
+    } else if (message.kind === "dapp") {
+      await handleDappRequest(id, message.payload || {});
     } else if (message.kind === "download") {
       await handleDownloadRequest(id, message.payload || {});
     } else {

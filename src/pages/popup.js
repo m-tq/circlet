@@ -8,14 +8,23 @@ const els = {
   recentCount: document.getElementById("recentCount"),
   bookmarkList: document.getElementById("bookmarkList"),
   bookmarkCount: document.getElementById("bookmarkCount"),
-  netDot: document.getElementById("netDot"),
-  netName: document.getElementById("netName"),
-  netMeta: document.getElementById("netMeta"),
-  networkSeg: document.getElementById("networkSeg"),
-  statusHint: document.getElementById("statusHint")
+  openDashboard: document.getElementById("openDashboard"),
+  walletChip: document.getElementById("walletChip"),
+  walletName: document.getElementById("walletName"),
+  walletAddress: document.getElementById("walletAddress"),
+  networkButton: document.getElementById("networkButton"),
+  footerNetworkName: document.getElementById("footerNetworkName"),
+  networkMenu: document.getElementById("networkMenu"),
+  networkList: document.getElementById("networkList"),
+  manageNetworks: document.getElementById("manageNetworks")
 };
 
-const state = { settings: null, network: null, busy: false };
+const state = {
+  settings: null,
+  network: null,
+  busy: false,
+  networkState: "checking"
+};
 
 init().catch(() => {});
 
@@ -27,6 +36,17 @@ async function init() {
   renderBookmarks();
   bind();
   ping();
+  loadWalletInfo();
+  chrome.storage.onChanged.addListener((changes, area) => {
+    if (area !== "local" || !changes["circlet:settings:v1"]) return;
+    loadSettings().then((next) => {
+      state.settings = next;
+      state.network = activeNetwork(next);
+      renderNetwork();
+      renderRecent();
+      renderBookmarks();
+    });
+  });
 }
 
 function bind() {
@@ -35,33 +55,74 @@ function bind() {
     openInput(els.input.value);
   });
   els.input.focus();
+
+  els.openDashboard.addEventListener("click", () => {
+    chrome.tabs.create({ url: chrome.runtime.getURL("home.html") });
+    window.close();
+  });
+  els.walletChip.addEventListener("click", () => {
+    chrome.tabs.create({ url: chrome.runtime.getURL("wallets.html") });
+    window.close();
+  });
+  els.networkButton.addEventListener("click", (event) => {
+    event.stopPropagation();
+    toggleNetworkMenu();
+  });
+  els.manageNetworks.addEventListener("click", () => {
+    chrome.tabs.create({ url: chrome.runtime.getURL("options.html#networks") });
+    window.close();
+  });
+  els.networkList.addEventListener("click", (event) => {
+    const item = event.target.closest?.("[data-network-id]");
+    if (item) switchNetwork(item.dataset.networkId);
+  });
   document.addEventListener("click", (event) => {
-    const net = event.target.closest?.("#networkSeg [data-network]");
-    if (net) {
-      switchNetwork(net.dataset.network);
-      return;
-    }
-    if (event.target.closest?.("[data-open-sample]")) {
-      openViewer({
-        circleId: "oct3A5bhpktxb9y2gepQeGxSbkJspq3Pv178Zyi9tkM1oJx",
-        path: "/index.html",
-        display: "oct://oct3A5bhpktxb9y2gepQeGxSbkJspq3Pv178Zyi9tkM1oJx",
-        networkId: "devnet"
-      });
-    }
+    if (!event.target.closest?.(".c-network-wrap")) closeNetworkMenu();
+  });
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape") closeNetworkMenu();
   });
 }
 
 function renderNetwork() {
   const network = state.network;
-  els.netName.textContent = network.name;
-  els.netMeta.textContent = network.type;
-  els.networkSeg.querySelectorAll("[data-network]").forEach((button) => {
-    const candidate = state.settings.networks.find((item) => item.type === button.dataset.network);
-    const active = Boolean(candidate && candidate.id === network.id);
-    button.classList.toggle("sq-seg__btn--active", active);
-    button.setAttribute("aria-pressed", String(active));
-  });
+  els.footerNetworkName.textContent = network.type === "mainnet" || network.type === "devnet" ? network.type : network.name;
+  els.networkButton.title = `${network.name} · ${network.type}`;
+  els.networkButton.dataset.status = state.networkState;
+  els.networkList.replaceChildren();
+  for (const item of state.settings.networks) {
+    const active = item.id === network.id;
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = `c-network-menu__item${active ? " is-active" : ""}`;
+    button.dataset.networkId = item.id;
+    button.setAttribute("role", "menuitemradio");
+    button.setAttribute("aria-checked", String(active));
+    button.innerHTML = `
+      <span class="c-btn-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 12.55a11 11 0 0 1 14.08 0"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><line x1="12" y1="20" x2="12.01" y2="20"/></svg></span>
+      <span class="c-network-menu__name c-truncate"></span>
+      <span class="c-network-menu__type"></span>
+      ${active ? '<span class="c-network-menu__check" aria-hidden="true"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></span>' : ""}`;
+    button.querySelector(".c-network-menu__name").textContent = item.name;
+    button.querySelector(".c-network-menu__type").textContent = item.type;
+    els.networkList.append(button);
+  }
+}
+
+function toggleNetworkMenu() {
+  const open = els.networkMenu.hidden;
+  els.networkMenu.hidden = !open;
+  els.networkButton.setAttribute("aria-expanded", String(open));
+  if (open) {
+    const active = els.networkList.querySelector(".is-active");
+    active?.focus();
+  }
+}
+
+function closeNetworkMenu() {
+  if (els.networkMenu.hidden) return;
+  els.networkMenu.hidden = true;
+  els.networkButton.setAttribute("aria-expanded", "false");
 }
 
 function renderRecent() {
@@ -156,11 +217,15 @@ function openBookmark(entry) {
   }
 }
 
-async function switchNetwork(type) {
-  const target = state.settings.networks.find((network) => network.type === type);
-  if (!target || target.id === state.network.id) return;
+async function switchNetwork(networkId) {
+  const target = state.settings.networks.find((network) => network.id === networkId);
+  if (!target || target.id === state.network.id) {
+    closeNetworkMenu();
+    return;
+  }
   state.settings = await setActiveNetwork(target.id);
   state.network = activeNetwork(state.settings);
+  closeNetworkMenu();
   renderNetwork();
   renderRecent();
   renderBookmarks();
@@ -168,24 +233,61 @@ async function switchNetwork(type) {
 }
 
 async function ping() {
-  els.netDot.style.background = "var(--sq-status-warning)";
-  els.statusHint.textContent = "Checking RPC…";
+  state.networkState = "checking";
+  updateNetworkStatusUi();
   try {
     const status = await nodeStatus(state.network);
-    if (status.latencyMs > 1200) els.netDot.style.background = "var(--sq-status-warning)";
-    else els.netDot.style.background = "var(--sq-status-running)";
-    els.statusHint.textContent = `${state.network.rpcUrls[0]} · ${status.latencyMs} ms · epoch ${status.epoch ?? "—"}`;
+    state.networkState = status.latencyMs > 1200 ? "warning" : "online";
+    updateNetworkStatusUi(status);
   } catch (error) {
-    els.netDot.style.background = "var(--sq-status-error)";
-    els.statusHint.textContent = error?.message || "RPC unreachable";
+    state.networkState = "offline";
+    updateNetworkStatusUi(null, error);
   }
+}
+
+function updateNetworkStatusUi(status, error) {
+  els.networkButton.dataset.status = state.networkState;
+  if (error) {
+    els.networkButton.title = `${state.network.name} · unreachable`;
+  } else if (status) {
+    els.networkButton.title = `${state.network.name} · ${status.latencyMs} ms · epoch ${status.epoch ?? "—"}`;
+  } else {
+    els.networkButton.title = `${state.network.name} · checking`;
+  }
+}
+
+async function loadWalletInfo() {
+  try {
+    const peek = await chrome.runtime.sendMessage({ type: "circlet:webcli:peek" });
+    if (!peek?.ok || !peek.data?.hasToken) {
+      setWalletInfo(null, "No wallet", "Open Wallets");
+      return;
+    }
+    const response = await chrome.runtime.sendMessage({ type: "circlet:webcli:status" });
+    if (!response?.ok || !response.data?.wallet?.address) {
+      setWalletInfo(null, "Wallet locked", "Open Wallets");
+      return;
+    }
+    const wallet = response.data.wallet;
+    const account = response.data.accounts?.accounts?.find((item) => item.active);
+    const name = account?.name || "Wallet";
+    setWalletInfo(wallet.address, name, shortAddress(wallet.address, 10, 7));
+  } catch {
+    setWalletInfo(null, "Wallets unavailable", "Open Wallets");
+  }
+}
+
+function setWalletInfo(address, name, secondary) {
+  els.walletName.textContent = name;
+  els.walletAddress.textContent = secondary;
+  els.walletChip.title = address ? `Open Wallets · ${address}` : "Open Wallets";
+  els.walletChip.classList.toggle("has-wallet", Boolean(address));
 }
 
 async function openInput(rawInput) {
   const raw = String(rawInput || "").trim();
   if (!raw || state.busy) return;
   state.busy = true;
-  els.statusHint.textContent = "Resolving…";
   try {
     if (/^https?:\/\//i.test(raw)) {
       await chrome.tabs.create({ url: raw });
@@ -208,7 +310,7 @@ async function openInput(rawInput) {
     }
     window.close();
   } catch (error) {
-    els.statusHint.textContent = error?.message || "Unable to resolve destination";
+    toast(error?.message || "Unable to resolve destination", "err");
   } finally {
     state.busy = false;
   }
@@ -224,4 +326,10 @@ function openViewer(entry) {
   if (entry.mode) params.set("mode", entry.mode);
   chrome.tabs.create({ url: chrome.runtime.getURL(`viewer.html?${params.toString()}`) });
   window.close();
+}
+
+function toast(message, kind) {
+  try {
+    window.SynteqUI?.toast(message, { kind: kind || "info" });
+  } catch {}
 }

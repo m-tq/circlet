@@ -66,6 +66,7 @@ export async function buildDocument(options) {
       display: ctx.display,
       network: ctx.network?.id || "",
       network_name: ctx.network?.name || "",
+      chain_id: ctx.network?.chainId || "",
       mode: ctx.mode,
       runtime: ctx.info?.runtime || null,
       owner: ctx.info?.owner || null,
